@@ -1,6 +1,6 @@
 [package]
 name = "seek_bufread"
-version = "1.0.1"
+version = "1.0.2"
 authors = ["gcarq <michael.egger@tsn.at>"]
 description = "A drop-in replacement for std::io::BufReader with seeking support."
 
