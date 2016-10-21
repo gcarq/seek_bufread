@@ -1,2 +1,2 @@
 # seek_bufread
-BufReader implementation with seeking support for Rust Language
+A drop-in replacement for `std::io::BufReader` with seeking support.
