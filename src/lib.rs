@@ -7,11 +7,6 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
-#![feature(inclusive_range_syntax)]
-#![feature(question_mark)]
-#![feature(test)]
-extern crate test;
-
 use std::fmt;
 use std::io::{self, BufRead, Read, Seek, SeekFrom};
 
@@ -27,25 +22,6 @@ const DEFAULT_BUF_SIZE: usize = 8 * 1024;
 /// This implementation of `BufRead` respects the internal buffer on `seek` calls,
 /// which leads to a huge performance gain in some circumstances.
 ///
-/// # Examples
-///
-/// ```
-/// extern crate seek_bufread;
-///
-/// use std::io::prelude::*;
-/// use std::fs::File;
-/// use seek_bufread::BufReader;
-///
-/// # fn foo() -> std::io::Result<()> {
-/// let mut f = try!(File::open("log.txt"));
-/// let mut reader = BufReader::new(f);
-///
-/// let mut line = String::new();
-/// let len = try!(reader.read_line(&mut line));
-/// println!("First line is {} bytes long", len);
-/// # Ok(())
-/// # }
-/// ```
 pub struct BufReader<R> {
     inner: R,              // internal reader
     buf: Box<[u8]>,        // internal buffer
@@ -57,43 +33,11 @@ pub struct BufReader<R> {
 impl<R: Read> BufReader<R> {
 
     /// Creates a new `BufReader` with a default buffer capacity (8192 bytes).
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// extern crate seek_bufread;
-    ///
-    /// use std::fs::File;
-    /// use seek_bufread::BufReader;
-    ///
-    /// # fn foo() -> std::io::Result<()> {
-    /// let mut f = try!(File::open("log.txt"));
-    /// let mut reader = BufReader::new(f);
-    /// # Ok(())
-    /// # }
-    /// ```
     pub fn new(inner: R) -> BufReader<R> {
         BufReader::with_capacity(DEFAULT_BUF_SIZE, inner)
     }
 
     /// Creates a new `BufReader` with the specified buffer capacity.
-    ///
-    /// # Examples
-    ///
-    /// Creating a buffer with ten bytes of capacity:
-    ///
-    /// ```
-    /// extern crate seek_bufread;
-    ///
-    /// use std::fs::File;
-    /// use seek_bufread::BufReader;
-    ///
-    /// # fn foo() -> std::io::Result<()> {
-    /// let mut f = try!(File::open("log.txt"));
-    /// let mut reader = BufReader::with_capacity(10, f);
-    /// # Ok(())
-    /// # }
-    /// ```
     pub fn with_capacity(cap: usize, inner: R) -> BufReader<R> {
         BufReader {
             inner: inner,
@@ -131,7 +75,7 @@ impl<R: Read> Read for BufReader<R> {
         let n_exp = buf.len();
         let mut n_total = 0;
         while n_total < n_exp {
-            let n_read = self.fill_buf()?.read(&mut buf[n_total..])?;
+            let n_read = try!(try!(self.fill_buf()).read(&mut buf[n_total..]));
             if n_read == 0 {
                 break;
             }
@@ -148,7 +92,7 @@ impl<R: Read> BufRead for BufReader<R> {
         // If we've reached the end of our internal buffer then we need to fetch
         // some more data from the underlying reader.
         if self.cap == self.buf_pos {
-            self.cap = self.inner.read(&mut self.buf)?;
+            self.cap = try!(self.inner.read(&mut self.buf));
             self.buf_pos = 0;
         }
         Ok(&self.buf[self.buf_pos..self.cap])
@@ -187,7 +131,7 @@ impl<R: Read + Seek> Seek for BufReader<R> {
                         None => {
                             // Seek in our internal buffer first, and the remaining offset in the inner reader
                             self.absolute_pos =
-                                self.inner.seek(SeekFrom::Start(self.absolute_pos - n))?;
+                                try!(self.inner.seek(SeekFrom::Start(self.absolute_pos - n)));
                             self.reset_buffer();
                         }
                     }
@@ -202,18 +146,18 @@ impl<R: Read + Seek> Seek for BufReader<R> {
                         } else {
                             // Out of scope. Seek inner reader to new position and reset buffer
                             self.absolute_pos =
-                                self.inner.seek(SeekFrom::Start(self.absolute_pos + n as u64))?;
+                                try!(self.inner.seek(SeekFrom::Start(self.absolute_pos + n as u64)));
                             self.reset_buffer();
                         }
                     } else {
                         // Buffer is full. Seek inner reader to new position
                         self.absolute_pos =
-                            self.inner.seek(SeekFrom::Start(self.absolute_pos + n as u64))?;
+                            try!(self.inner.seek(SeekFrom::Start(self.absolute_pos + n as u64)));
                     }
                 }
             }
             SeekFrom::Start(_) | SeekFrom::End(_) => {
-                self.absolute_pos = self.inner.seek(pos)?;
+                self.absolute_pos = try!(self.inner.seek(pos));
                 self.reset_buffer();
             }
         }
