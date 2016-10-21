@@ -22,25 +22,6 @@ const DEFAULT_BUF_SIZE: usize = 8 * 1024;
 /// This implementation of `BufRead` respects the internal buffer on `seek` calls,
 /// which leads to a huge performance gain in some circumstances.
 ///
-/// # Examples
-///
-/// ```
-/// extern crate seek_bufread;
-///
-/// use std::io::prelude::*;
-/// use std::fs::File;
-/// use seek_bufread::BufReader;
-///
-/// # fn foo() -> std::io::Result<()> {
-/// let mut f = try!(File::open("log.txt"));
-/// let mut reader = BufReader::new(f);
-///
-/// let mut line = String::new();
-/// let len = try!(reader.read_line(&mut line));
-/// println!("First line is {} bytes long", len);
-/// # Ok(())
-/// # }
-/// ```
 pub struct BufReader<R> {
     inner: R,              // internal reader
     buf: Box<[u8]>,        // internal buffer
@@ -52,43 +33,11 @@ pub struct BufReader<R> {
 impl<R: Read> BufReader<R> {
 
     /// Creates a new `BufReader` with a default buffer capacity (8192 bytes).
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// extern crate seek_bufread;
-    ///
-    /// use std::fs::File;
-    /// use seek_bufread::BufReader;
-    ///
-    /// # fn foo() -> std::io::Result<()> {
-    /// let mut f = try!(File::open("log.txt"));
-    /// let mut reader = BufReader::new(f);
-    /// # Ok(())
-    /// # }
-    /// ```
     pub fn new(inner: R) -> BufReader<R> {
         BufReader::with_capacity(DEFAULT_BUF_SIZE, inner)
     }
 
     /// Creates a new `BufReader` with the specified buffer capacity.
-    ///
-    /// # Examples
-    ///
-    /// Creating a buffer with ten bytes of capacity:
-    ///
-    /// ```
-    /// extern crate seek_bufread;
-    ///
-    /// use std::fs::File;
-    /// use seek_bufread::BufReader;
-    ///
-    /// # fn foo() -> std::io::Result<()> {
-    /// let mut f = try!(File::open("log.txt"));
-    /// let mut reader = BufReader::with_capacity(10, f);
-    /// # Ok(())
-    /// # }
-    /// ```
     pub fn with_capacity(cap: usize, inner: R) -> BufReader<R> {
         BufReader {
             inner: inner,
