@@ -2,5 +2,8 @@
 name = "seek_bufread"
 version = "1.0.0"
 authors = ["gcarq <michael.egger@tsn.at>"]
+license = "MIT/Apache-2.0"
+keywords = ["seek" "bufread", "io", "buffer" "reader"]
+repository = "https://github.com/gcarq/seek_bufread"
 
 [dependencies]
