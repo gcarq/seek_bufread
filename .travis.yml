@@ -34,12 +34,13 @@ after_success:
   # measure code coverage and upload to coveralls.io (the verify
   # argument mitigates kcov crashes due to malformed debuginfo, at the
   # cost of some speed <https://github.com/huonw/travis-cargo/issues/12>)
-  - |
-      travis-cargo coveralls --no-sudo --verify && cargo doc \
-      && echo '<meta http-equiv=refresh content=0;url=seek_bufread/index.html>' > target/doc/index.html && \
-      sudo pip install ghp-import && \
-      ghp-import -n target/doc && \
-      git push -qf https://${TOKEN}@github.com/${TRAVIS_REPO_SLUG}.git gh-pages
+  - travis-cargo coveralls --no-sudo --verify
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then ./kcov/build/src/kcov --verify --coveralls-id=$TRAVIS_JOB_ID --exclude-pattern=/.cargo target/kcov target/debug/seek_bufread-*; fi
+  - cargo doc
+  - echo '<meta http-equiv=refresh content=0;url=seek_bufread/index.html>' > target/doc/index.html
+  - sudo pip install ghp-import
+  - ghp-import -n target/doc
+  - git push -qf https://${TOKEN}@github.com/${TRAVIS_REPO_SLUG}.git gh-pages
 
 env:
   global:
