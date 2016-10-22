@@ -226,13 +226,11 @@ impl<R: Read + Seek> Seek for BufReader<R> {
                 }
             }
             SeekFrom::Start(n) => {
-                let available = self.available() as u64;
-                // Check if n is within bounds
-                match n >= self.absolute_pos && n < self.absolute_pos + available {
-                    true => {
-                        let new_pos = (n - self.absolute_pos) as usize;
-                        self.seek_forward(new_pos)
-                     }
+                // Get difference between actual and requested position
+                let n_bytes = n.checked_sub(self.absolute_pos).unwrap_or(0);
+                // Check if number of bytes is within buffer range
+                match n_bytes > 0 && n_bytes < self.available() as u64 {
+                    true => self.seek_forward(n_bytes as usize),
                     false => self.sync_and_flush(pos)
                 }
             }
@@ -322,7 +320,7 @@ mod tests {
     #[test]
     fn seek_start() {
         let inner = Cursor::new([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]);
-        let mut reader = BufReader::with_capacity(4, inner);
+        let mut reader = BufReader::with_capacity(10, inner);
 
         reader.seek(SeekFrom::Start(3)).unwrap();
         let mut buf = [0; 8];
@@ -348,7 +346,7 @@ mod tests {
     #[test]
     fn seek_start_std() {
         let inner = Cursor::new([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]);
-        let mut reader = io::BufReader::with_capacity(4, inner);
+        let mut reader = io::BufReader::with_capacity(10, inner);
 
         reader.seek(SeekFrom::Start(3)).unwrap();
         let mut buf = [0; 8];
@@ -374,33 +372,33 @@ mod tests {
     #[test]
     fn seek_current_positive() {
         let inner = Cursor::new([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]);
-        let mut reader = BufReader::with_capacity(2, inner);
+        let mut reader = BufReader::with_capacity(20, inner);
 
-        reader.seek(SeekFrom::Current(4)).unwrap();
+        reader.seek(SeekFrom::Current(2)).unwrap();
         let mut buf = [0; 8];
         reader.read(&mut buf).unwrap();
-        assert_eq!(buf, [4, 5, 6, 7, 8, 9, 10, 11]);
+        assert_eq!(buf, [2, 3, 4, 5, 6, 7, 8, 9]);
 
-        reader.seek(SeekFrom::Current(1)).unwrap();
+        reader.seek(SeekFrom::Current(6)).unwrap();
         let mut buf = [0; 8];
         reader.read(&mut buf).unwrap();
-        assert_eq!(buf, [13, 14, 15, 16, 0, 0, 0, 0]);
+        assert_eq!(buf, [16, 0, 0, 0, 0, 0, 0, 0]);
     }
 
     #[test]
     fn seek_current_positive_std() {
         let inner = Cursor::new([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]);
-        let mut reader = io::BufReader::with_capacity(2, inner);
+        let mut reader = io::BufReader::with_capacity(20, inner);
 
-        reader.seek(SeekFrom::Current(4)).unwrap();
+        reader.seek(SeekFrom::Current(2)).unwrap();
         let mut buf = [0; 8];
         reader.read(&mut buf).unwrap();
-        assert_eq!(buf, [4, 5, 6, 7, 8, 9, 10, 11]);
+        assert_eq!(buf, [2, 3, 4, 5, 6, 7, 8, 9]);
 
-        reader.seek(SeekFrom::Current(1)).unwrap();
+        reader.seek(SeekFrom::Current(6)).unwrap();
         let mut buf = [0; 8];
         reader.read(&mut buf).unwrap();
-        assert_eq!(buf, [13, 14, 15, 16, 0, 0, 0, 0]);
+        assert_eq!(buf, [16, 0, 0, 0, 0, 0, 0, 0]);
     }
 
     #[test]
