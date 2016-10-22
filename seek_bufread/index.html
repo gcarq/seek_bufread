@@ -47,14 +47,38 @@
                    <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">
                        [<span class='inner'>&#x2212;</span>]
                    </a>
-               </span><a id='src-0' class='srclink' href='../src/seek_bufread/src/lib.rs.html#10-514' title='goto source code'>[src]</a></span></h1>
-<h2 id='structs' class='section-header'><a href="#structs">Structs</a></h2>
+               </span><a id='src-0' class='srclink' href='../src/seek_bufread/src/lib.rs.html#11-610' title='goto source code'>[src]</a></span></h1>
+<div class='docblock'><p><a href="https://github.com/gcarq/seek_bufread">
+<img src="https://s3.amazonaws.com/github/ribbons/forkme_right_red_aa0000.png" style="position: absolute; top: 0; right: 0; border: 0; margin-top: 55px" alt="Fork me on GitHub">
+</a></p>
+
+<p>The <code>BufReader</code> is a drop-in replacement for <code>std::io::BufReader</code> with seeking support.
+If <code>.seek(SeekFrom::Current(n))</code> is called and <code>n</code> is in range of the internal buffer the
+underlying reader is not invoked. This has the side effect that you can no longer access
+the underlying buffer directly after being consumed by <code>BufReader</code>,
+because its position could be out of sync.</p>
+
+<h1 id='examples' class='section-header'><a href='#examples'>Examples</a></h1>
+<pre class='rust rust-example-rendered'>
+<span class='kw'>use</span> <span class='ident'>std</span>::<span class='ident'>io</span>::{<span class='self'>self</span>, <span class='ident'>Cursor</span>, <span class='ident'>Read</span>, <span class='ident'>Seek</span>, <span class='ident'>SeekFrom</span>};
+<span class='kw'>use</span> <span class='ident'>seek_bufread</span>::<span class='ident'>BufReader</span>;
+
+<span class='kw'>let</span> <span class='ident'>inner</span> <span class='op'>=</span> <span class='ident'>Cursor</span>::<span class='ident'>new</span>([<span class='number'>0</span>, <span class='number'>1</span>, <span class='number'>2</span>, <span class='number'>3</span>, <span class='number'>4</span>, <span class='number'>5</span>, <span class='number'>6</span>, <span class='number'>7</span>, <span class='number'>8</span>, <span class='number'>9</span>, <span class='number'>10</span>, <span class='number'>11</span>, <span class='number'>12</span>, <span class='number'>13</span>, <span class='number'>14</span>, <span class='number'>15</span>, <span class='number'>16</span>]);
+<span class='kw'>let</span> <span class='kw-2'>mut</span> <span class='ident'>reader</span> <span class='op'>=</span> <span class='ident'>BufReader</span>::<span class='ident'>new</span>(<span class='ident'>inner</span>);
+
+<span class='ident'>reader</span>.<span class='ident'>seek</span>(<span class='ident'>SeekFrom</span>::<span class='ident'>Current</span>(<span class='number'>4</span>)).<span class='ident'>unwrap</span>();
+<span class='kw'>let</span> <span class='kw-2'>mut</span> <span class='ident'>buf</span> <span class='op'>=</span> [<span class='number'>0</span>; <span class='number'>8</span>];
+
+<span class='comment'>// read bytes from internal buffer</span>
+<span class='ident'>reader</span>.<span class='ident'>read</span>(<span class='kw-2'>&amp;</span><span class='kw-2'>mut</span> <span class='ident'>buf</span>).<span class='ident'>unwrap</span>();;
+<span class='macro'>assert_eq</span><span class='macro'>!</span>(<span class='ident'>buf</span>, [<span class='number'>4</span>, <span class='number'>5</span>, <span class='number'>6</span>, <span class='number'>7</span>, <span class='number'>8</span>, <span class='number'>9</span>, <span class='number'>10</span>, <span class='number'>11</span>]);<a class='test-arrow' target='_blank' href=''>Run</a></pre>
+</div><h2 id='structs' class='section-header'><a href="#structs">Structs</a></h2>
 <table>
                        <tr class=' module-item'>
                            <td><a class='struct' href='struct.BufReader.html'
                                   title='seek_bufread::BufReader'>BufReader</a></td>
                            <td class='docblock-short'>
-                                <p>The <code>BufReader</code> struct adds buffering with seeking support to any reader.</p>
+                                <p>The <code>BufReader</code> struct adds buffering to any reader.</p>
                            </td>
                        </tr></table></section>
     <section id='search' class="content hidden"></section>

@@ -1,1 +1,1 @@
-initSidebarItems({"struct":[["BufReader","The `BufReader` struct adds buffering with seeking support to any reader."]]});
+initSidebarItems({"struct":[["BufReader","The `BufReader` struct adds buffering to any reader."]]});
