@@ -1,5 +1,6 @@
-// Copyright 2016 gcarq. See the LICENSE file at the top-level
-// directory of this distribution.
+// Original work Copyright 2013 The Rust Project Developers.
+// Modified work Copyright 2016 gcarq.
+// See the LICENSE file at the top-level directory of this distribution.
 //
 // Licensed under the Apache License, Version 2.0 <LICENSE-APACHE or
 // http://www.apache.org/licenses/LICENSE-2.0> or the MIT license
@@ -7,21 +8,65 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
+//! <a href="https://github.com/gcarq/seek_bufread">
+//! <img src="https://s3.amazonaws.com/github/ribbons/forkme_right_red_aa0000.png" style="position: absolute; top: 0; right: 0; border: 0; margin-top: 55px" alt="Fork me on GitHub">
+//! </a>
+//!
+//! The `BufReader` is a drop-in replacement for `std::io::BufReader` with seeking support.
+//! If `.seek(SeekFrom::Current(n))` is called and `n` is in range of the internal buffer the
+//! underlying reader is not invoked. This has the side effect that you can no longer access
+//! the underlying buffer directly after being consumed by `BufReader`,
+//! because its position could be out of sync.
+//!
+//! # Examples
+//!
+//! ```
+//! use std::io::{self, Cursor, Read, Seek, SeekFrom};
+//! use seek_bufread::BufReader;
+//!
+//! let inner = Cursor::new([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]);
+//! let mut reader = BufReader::new(inner);
+//!
+//! reader.seek(SeekFrom::Current(4)).unwrap();
+//! let mut buf = [0; 8];
+//!
+//! // read bytes from internal buffer
+//! reader.read(&mut buf).unwrap();;
+//! assert_eq!(buf, [4, 5, 6, 7, 8, 9, 10, 11]);
+//! ```
+
+//#![feature(test)]
+//extern crate test;
+
 use std::fmt;
 use std::io::{self, BufRead, Read, Seek, SeekFrom};
 
 const DEFAULT_BUF_SIZE: usize = 8 * 1024;
 
-/// The `BufReader` struct adds buffering with seeking support to any reader.
+/// The `BufReader` struct adds buffering to any reader.
 ///
 /// It can be excessively inefficient to work directly with a `Read` instance.
 /// For example, every call to `read` on `TcpStream` results in a system call.
 /// A `BufReader` performs large, infrequent reads on the underlying `Read`
 /// and maintains an in-memory buffer of the results.
 ///
-/// This implementation of `BufRead` respects the internal buffer on `seek` calls,
-/// which leads to a huge performance gain in some circumstances.
+/// # Examples
 ///
+/// ```
+/// use std::io::prelude::*;
+/// use std::fs::File;
+/// use seek_bufread::BufReader;
+///
+/// # fn foo() -> std::io::Result<()> {
+/// let mut f = try!(File::open("log.txt"));
+/// let mut reader = BufReader::new(f);
+///
+/// let mut line = String::new();
+/// let len = try!(reader.read_line(&mut line));
+/// println!("First line is {} bytes long", len);
+/// # Ok(())
+/// # }
+/// ```
 pub struct BufReader<R> {
     inner: R,              // internal reader
     buf: Box<[u8]>,        // internal buffer
@@ -30,14 +75,42 @@ pub struct BufReader<R> {
     absolute_pos: u64,     // absolute position
 }
 
-impl<R: Read> BufReader<R> {
+impl<R: Read + Seek> BufReader<R> {
 
     /// Creates a new `BufReader` with a default buffer capacity (8192 bytes).
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use std::fs::File;
+    /// use seek_bufread::BufReader;
+    ///
+    /// # fn foo() -> std::io::Result<()> {
+    /// let mut f = try!(File::open("log.txt"));
+    /// let mut reader = BufReader::new(f);
+    /// # Ok(())
+    /// # }
+    /// ```
     pub fn new(inner: R) -> BufReader<R> {
         BufReader::with_capacity(DEFAULT_BUF_SIZE, inner)
     }
 
     /// Creates a new `BufReader` with the specified buffer capacity.
+    ///
+    /// # Examples
+    ///
+    /// Creating a buffer with ten bytes of capacity:
+    ///
+    /// ```
+    /// use std::fs::File;
+    /// use seek_bufread::BufReader;
+    ///
+    /// # fn foo() -> std::io::Result<()> {
+    /// let mut f = try!(File::open("log.txt"));
+    /// let mut reader = BufReader::with_capacity(10, f);
+    /// # Ok(())
+    /// # }
+    /// ```
     pub fn with_capacity(cap: usize, inner: R) -> BufReader<R> {
         BufReader {
             inner: inner,
@@ -54,16 +127,47 @@ impl<R: Read> BufReader<R> {
     /// Returns the total buffer capacity.
     pub fn capacity(&self) -> usize { self.cap }
 
-    /// Returns the current number of bytes available in the buffer.
+    /// Returns the current number of remaining bytes available in the buffer.
     pub fn available(&self) -> usize {
-        match self.cap.checked_sub(self.buf_pos) {
-            Some(remaining) => remaining,
-            None => 0
+        self.cap.checked_sub(self.buf_pos).unwrap_or(0)
+    }
+
+    /// Consumes `self`, synchronizes the inner reader position and returns the inner reader.
+    pub fn into_inner(mut self) -> io::Result<R> {
+        // Sync position of internal reader
+        try!(self.inner.seek(SeekFrom::Start(self.absolute_pos)));
+        Ok(self.inner)
+    }
+
+    /// Syncs the position of our underlying reader and empties the buffer
+    fn sync_and_flush(&mut self, pos: SeekFrom) -> io::Result<u64> {
+        self.buf_pos = self.cap;
+        self.absolute_pos = try!(self.inner.seek(pos));
+        Ok(self.absolute_pos)
+    }
+
+    /// Seeks `n` bytes backwards from current position
+    fn seek_backward(&mut self, n: usize) -> io::Result<u64> {
+        if self.buf_pos - n > 0 {
+            // Seek our internal buffer
+            self.absolute_pos -= n as u64;
+            self.buf_pos -= n;
+            Ok(self.absolute_pos)
+        } else {
+            // Out of scope. Seek inner reader to new position and reset buffer
+            self.sync_and_flush(SeekFrom::Current(n as i64 * -1))
         }
     }
 
-    fn reset_buffer(&mut self) {
-        self.buf_pos = self.cap;
+    /// Seeks `n` bytes forwards from current position
+    fn seek_forward(&mut self, n: usize) -> io::Result<u64> {
+        if self.available().checked_sub(n).is_some() {
+            self.consume(n);
+            Ok(self.absolute_pos)
+        } else {
+            // Out of scope. Seek inner reader to new position and reset buffer
+            self.sync_and_flush(SeekFrom::Current(n as i64))
+        }
     }
 }
 
@@ -87,7 +191,6 @@ impl<R: Read> Read for BufReader<R> {
 }
 
 impl<R: Read> BufRead for BufReader<R> {
-    #[inline]
     fn fill_buf(&mut self) -> io::Result<&[u8]> {
         // If we've reached the end of our internal buffer then we need to fetch
         // some more data from the underlying reader.
@@ -98,7 +201,6 @@ impl<R: Read> BufRead for BufReader<R> {
         Ok(&self.buf[self.buf_pos..self.cap])
     }
 
-    #[inline]
     fn consume(&mut self, amt: usize) {
         self.buf_pos += amt;
         self.absolute_pos += amt as u64;
@@ -119,53 +221,19 @@ impl<R: Read + Seek> Seek for BufReader<R> {
     fn seek(&mut self, pos: SeekFrom) -> io::Result<u64> {
         match pos {
             SeekFrom::Current(n) => {
-                if n < 0 {
-                    // Seek backwards
-                    let n = n.abs() as u64;
-                    match self.buf_pos.checked_sub(n as usize) {
-                        Some(_) => {
-                            // Seek our internal buffer
-                            self.absolute_pos -= n;
-                            self.buf_pos -= n as usize;
-                        }
-                        None => {
-                            // Seek in our internal buffer first, and the remaining offset in the inner reader
-                            self.absolute_pos =
-                                try!(self.inner.seek(SeekFrom::Start(self.absolute_pos - n)));
-                            self.reset_buffer();
-                        }
-                    }
-                } else {
-                    // Seek forwards
-                    let n = n as usize;
-                    let remaining = self.available();
-                    if remaining > 0 {
-                        if remaining.checked_sub(n).is_some() {
-                            // Seek in our internal buffer
-                            self.consume(n);
-                        } else {
-                            // Out of scope. Seek inner reader to new position and reset buffer
-                            self.absolute_pos =
-                                try!(self.inner.seek(SeekFrom::Start(self.absolute_pos + n as u64)));
-                            self.reset_buffer();
-                        }
-                    } else {
-                        // Buffer is full. Seek inner reader to new position
-                        self.absolute_pos =
-                            try!(self.inner.seek(SeekFrom::Start(self.absolute_pos + n as u64)));
-                    }
+                match n > 0 {
+                    true => self.seek_forward(n as usize),
+                    false => self.seek_backward(n.abs() as usize)
                 }
             }
             SeekFrom::Start(_) | SeekFrom::End(_) => {
-                self.absolute_pos = try!(self.inner.seek(pos));
-                self.reset_buffer();
+                self.sync_and_flush(pos)
             }
         }
-        Ok(self.absolute_pos)
     }
 }
 
-impl<R> fmt::Debug for BufReader<R> where R: fmt::Debug + Read {
+impl<R> fmt::Debug for BufReader<R> where R: fmt::Debug + Read + Seek {
     fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
         fmt.debug_struct("BufReader")
             .field("reader", &self.inner)
@@ -372,6 +440,7 @@ mod tests {
     }
 }
 
+
 #[cfg(bench)]
 mod bench {
     use super::*;
@@ -486,11 +555,10 @@ mod bench {
         b.iter(|| {
             let mut reader = BufReader::with_capacity(5000000, File::open("foo.txt").unwrap());
             let mut buf: Vec<u8> = Vec::with_capacity(100000);
-            for i in 0...100 {
-                reader.seek(SeekFrom::Current(i * 10)).unwrap();
+            for i in 0..100 {
+                reader.seek(SeekFrom::Current(i * 100)).unwrap();
                 reader.read(&mut buf).unwrap();
             }
-
         });
         fs::remove_file("foo.txt").unwrap();
     }
@@ -502,13 +570,41 @@ mod bench {
         b.iter(|| {
             let mut reader = io::BufReader::with_capacity(5000000, File::open("foo.txt").unwrap());
             let mut buf: Vec<u8> = Vec::with_capacity(100000);
-            for i in 0...100 {
-                reader.seek(SeekFrom::Current(i * 10)).unwrap();
+            for i in 0..100 {
+                reader.seek(SeekFrom::Current(i * 100)).unwrap();
                 reader.read(&mut buf).unwrap();
             }
-
         });
         fs::remove_file("foo.txt").unwrap();
     }
 
+    #[bench]
+    fn read_seek_10mb_default_from_file(b: &mut Bencher) {
+        let mut f = File::create("foo.txt").unwrap();
+        f.write_all(&vec![0; 10000000]).unwrap();
+        b.iter(|| {
+            let mut reader = BufReader::new(File::open("foo.txt").unwrap());
+            let mut buf: Vec<u8> = Vec::with_capacity(100000);
+            for i in 0..100 {
+                reader.seek(SeekFrom::Current(i * 100)).unwrap();
+                reader.read(&mut buf).unwrap();
+            }
+        });
+        fs::remove_file("foo.txt").unwrap();
+    }
+
+    #[bench]
+    fn read_seek_10mb_default_from_file_std(b: &mut Bencher) {
+        let mut f = File::create("foo.txt").unwrap();
+        f.write_all(&vec![0; 10000000]).unwrap();
+        b.iter(|| {
+            let mut reader = io::BufReader::new(File::open("foo.txt").unwrap());
+            let mut buf: Vec<u8> = Vec::with_capacity(100000);
+            for i in 0..100 {
+                reader.seek(SeekFrom::Current(i * 100)).unwrap();
+                reader.read(&mut buf).unwrap();
+            }
+        });
+        fs::remove_file("foo.txt").unwrap();
+    }
 }
