@@ -1,6 +1,6 @@
 [package]
 name = "seek_bufread"
-version = "1.1.0"
+version = "1.1.1"
 authors = ["gcarq <michael.egger@tsn.at>"]
 
 documentation = "https://gcarq.github.io/seek_bufread"
