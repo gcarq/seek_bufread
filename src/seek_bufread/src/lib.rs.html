@@ -652,6 +652,63 @@
 <span id="608">608</span>
 <span id="609">609</span>
 <span id="610">610</span>
+<span id="611">611</span>
+<span id="612">612</span>
+<span id="613">613</span>
+<span id="614">614</span>
+<span id="615">615</span>
+<span id="616">616</span>
+<span id="617">617</span>
+<span id="618">618</span>
+<span id="619">619</span>
+<span id="620">620</span>
+<span id="621">621</span>
+<span id="622">622</span>
+<span id="623">623</span>
+<span id="624">624</span>
+<span id="625">625</span>
+<span id="626">626</span>
+<span id="627">627</span>
+<span id="628">628</span>
+<span id="629">629</span>
+<span id="630">630</span>
+<span id="631">631</span>
+<span id="632">632</span>
+<span id="633">633</span>
+<span id="634">634</span>
+<span id="635">635</span>
+<span id="636">636</span>
+<span id="637">637</span>
+<span id="638">638</span>
+<span id="639">639</span>
+<span id="640">640</span>
+<span id="641">641</span>
+<span id="642">642</span>
+<span id="643">643</span>
+<span id="644">644</span>
+<span id="645">645</span>
+<span id="646">646</span>
+<span id="647">647</span>
+<span id="648">648</span>
+<span id="649">649</span>
+<span id="650">650</span>
+<span id="651">651</span>
+<span id="652">652</span>
+<span id="653">653</span>
+<span id="654">654</span>
+<span id="655">655</span>
+<span id="656">656</span>
+<span id="657">657</span>
+<span id="658">658</span>
+<span id="659">659</span>
+<span id="660">660</span>
+<span id="661">661</span>
+<span id="662">662</span>
+<span id="663">663</span>
+<span id="664">664</span>
+<span id="665">665</span>
+<span id="666">666</span>
+<span id="667">667</span>
 </pre><pre class='rust '>
 <span class='comment'>// Original work Copyright 2013 The Rust Project Developers.</span>
 <span class='comment'>// Modified work Copyright 2016 gcarq.</span>
@@ -662,12 +719,8 @@
 <span class='comment'>// &lt;LICENSE-MIT or http://opensource.org/licenses/MIT&gt;, at your</span>
 <span class='comment'>// option. This file may not be copied, modified, or distributed</span>
 <span class='comment'>// except according to those terms.</span>
-
-<span class='doccomment'>//! &lt;a href=&quot;https://github.com/gcarq/seek_bufread&quot;&gt;</span>
-<span class='doccomment'>//! &lt;img src=&quot;https://s3.amazonaws.com/github/ribbons/forkme_right_red_aa0000.png&quot; style=&quot;position: absolute; top: 0; right: 0; border: 0; margin-top: 55px&quot; alt=&quot;Fork me on GitHub&quot;&gt;</span>
-<span class='doccomment'>//! &lt;/a&gt;</span>
-<span class='doccomment'>//!</span>
 <span class='doccomment'>//! The `BufReader` is a drop-in replacement for `std::io::BufReader` with seeking support.</span>
+<span class='doccomment'>//!</span>
 <span class='doccomment'>//! If `.seek(SeekFrom::Current(n))` is called and `n` is in range of the internal buffer the</span>
 <span class='doccomment'>//! underlying reader is not invoked. This has the side effect that you can no longer access</span>
 <span class='doccomment'>//! the underlying buffer directly after being consumed by `BufReader`,</span>
@@ -686,7 +739,7 @@
 <span class='doccomment'>//! let mut buf = [0; 8];</span>
 <span class='doccomment'>//!</span>
 <span class='doccomment'>//! // read bytes from internal buffer</span>
-<span class='doccomment'>//! reader.read(&amp;mut buf).unwrap();;</span>
+<span class='doccomment'>//! reader.read(&amp;mut buf).unwrap();</span>
 <span class='doccomment'>//! assert_eq!(buf, [4, 5, 6, 7, 8, 9, 10, 11]);</span>
 <span class='doccomment'>//! ```</span>
 
@@ -802,15 +855,17 @@
     }
 
     <span class='doccomment'>/// Seeks `n` bytes backwards from current position</span>
-    <span class='kw'>fn</span> <span class='ident'>seek_backward</span>(<span class='kw-2'>&amp;</span><span class='kw-2'>mut</span> <span class='self'>self</span>, <span class='ident'>n</span>: <span class='ident'>usize</span>) <span class='op'>-&gt;</span> <span class='ident'>io</span>::<span class='prelude-ty'>Result</span><span class='op'>&lt;</span><span class='ident'>u64</span><span class='op'>&gt;</span> {
-        <span class='kw'>if</span> <span class='self'>self</span>.<span class='ident'>buf_pos</span> <span class='op'>-</span> <span class='ident'>n</span> <span class='op'>&gt;</span> <span class='number'>0</span> {
+    <span class='kw'>fn</span> <span class='ident'>seek_backward</span>(<span class='kw-2'>&amp;</span><span class='kw-2'>mut</span> <span class='self'>self</span>, <span class='ident'>n</span>: <span class='ident'>i64</span>) <span class='op'>-&gt;</span> <span class='ident'>io</span>::<span class='prelude-ty'>Result</span><span class='op'>&lt;</span><span class='ident'>u64</span><span class='op'>&gt;</span> {
+        <span class='kw'>let</span> <span class='ident'>n_abs</span> <span class='op'>=</span> <span class='ident'>n</span>.<span class='ident'>abs</span>() <span class='kw'>as</span> <span class='ident'>usize</span>;
+        <span class='kw'>if</span> <span class='self'>self</span>.<span class='ident'>buf_pos</span>.<span class='ident'>checked_sub</span>(<span class='ident'>n_abs</span>).<span class='ident'>is_some</span>() {
             <span class='comment'>// Seek our internal buffer</span>
-            <span class='self'>self</span>.<span class='ident'>absolute_pos</span> <span class='op'>-=</span> <span class='ident'>n</span> <span class='kw'>as</span> <span class='ident'>u64</span>;
-            <span class='self'>self</span>.<span class='ident'>buf_pos</span> <span class='op'>-=</span> <span class='ident'>n</span>;
+            <span class='self'>self</span>.<span class='ident'>absolute_pos</span> <span class='op'>-=</span> <span class='ident'>n_abs</span> <span class='kw'>as</span> <span class='ident'>u64</span>;
+            <span class='self'>self</span>.<span class='ident'>buf_pos</span> <span class='op'>-=</span> <span class='ident'>n_abs</span>;
             <span class='prelude-val'>Ok</span>(<span class='self'>self</span>.<span class='ident'>absolute_pos</span>)
         } <span class='kw'>else</span> {
             <span class='comment'>// Out of scope. Seek inner reader to new position and reset buffer</span>
-            <span class='self'>self</span>.<span class='ident'>sync_and_flush</span>(<span class='ident'>SeekFrom</span>::<span class='ident'>Current</span>(<span class='ident'>n</span> <span class='kw'>as</span> <span class='ident'>i64</span> <span class='op'>*</span> <span class='op'>-</span><span class='number'>1</span>))
+            <span class='kw'>let</span> <span class='ident'>new_pos</span> <span class='op'>=</span> <span class='self'>self</span>.<span class='ident'>absolute_pos</span> <span class='op'>-</span> <span class='ident'>n_abs</span> <span class='kw'>as</span> <span class='ident'>u64</span>;
+            <span class='self'>self</span>.<span class='ident'>sync_and_flush</span>(<span class='ident'>SeekFrom</span>::<span class='ident'>Start</span>(<span class='ident'>new_pos</span>))
         }
     }
 
@@ -821,7 +876,8 @@
             <span class='prelude-val'>Ok</span>(<span class='self'>self</span>.<span class='ident'>absolute_pos</span>)
         } <span class='kw'>else</span> {
             <span class='comment'>// Out of scope. Seek inner reader to new position and reset buffer</span>
-            <span class='self'>self</span>.<span class='ident'>sync_and_flush</span>(<span class='ident'>SeekFrom</span>::<span class='ident'>Current</span>(<span class='ident'>n</span> <span class='kw'>as</span> <span class='ident'>i64</span>))
+            <span class='kw'>let</span> <span class='ident'>new_pos</span> <span class='op'>=</span> <span class='self'>self</span>.<span class='ident'>absolute_pos</span> <span class='op'>+</span> <span class='ident'>n</span> <span class='kw'>as</span> <span class='ident'>u64</span>;
+            <span class='self'>self</span>.<span class='ident'>sync_and_flush</span>(<span class='ident'>SeekFrom</span>::<span class='ident'>Start</span>(<span class='ident'>new_pos</span>))
         }
     }
 }
@@ -876,14 +932,21 @@
     <span class='kw'>fn</span> <span class='ident'>seek</span>(<span class='kw-2'>&amp;</span><span class='kw-2'>mut</span> <span class='self'>self</span>, <span class='ident'>pos</span>: <span class='ident'>SeekFrom</span>) <span class='op'>-&gt;</span> <span class='ident'>io</span>::<span class='prelude-ty'>Result</span><span class='op'>&lt;</span><span class='ident'>u64</span><span class='op'>&gt;</span> {
         <span class='kw'>match</span> <span class='ident'>pos</span> {
             <span class='ident'>SeekFrom</span>::<span class='ident'>Current</span>(<span class='ident'>n</span>) <span class='op'>=&gt;</span> {
-                <span class='kw'>match</span> <span class='ident'>n</span> <span class='op'>&gt;</span> <span class='number'>0</span> {
+                <span class='kw'>match</span> <span class='ident'>n</span> <span class='op'>&gt;=</span> <span class='number'>0</span> {
                     <span class='bool-val'>true</span> <span class='op'>=&gt;</span> <span class='self'>self</span>.<span class='ident'>seek_forward</span>(<span class='ident'>n</span> <span class='kw'>as</span> <span class='ident'>usize</span>),
-                    <span class='bool-val'>false</span> <span class='op'>=&gt;</span> <span class='self'>self</span>.<span class='ident'>seek_backward</span>(<span class='ident'>n</span>.<span class='ident'>abs</span>() <span class='kw'>as</span> <span class='ident'>usize</span>)
+                    <span class='bool-val'>false</span> <span class='op'>=&gt;</span> <span class='self'>self</span>.<span class='ident'>seek_backward</span>(<span class='ident'>n</span>)
                 }
             }
-            <span class='ident'>SeekFrom</span>::<span class='ident'>Start</span>(_) <span class='op'>|</span> <span class='ident'>SeekFrom</span>::<span class='ident'>End</span>(_) <span class='op'>=&gt;</span> {
-                <span class='self'>self</span>.<span class='ident'>sync_and_flush</span>(<span class='ident'>pos</span>)
+            <span class='ident'>SeekFrom</span>::<span class='ident'>Start</span>(<span class='ident'>n</span>) <span class='op'>=&gt;</span> {
+                <span class='comment'>// Get difference between actual and requested position</span>
+                <span class='kw'>let</span> <span class='ident'>n_bytes</span> <span class='op'>=</span> <span class='ident'>n</span>.<span class='ident'>checked_sub</span>(<span class='self'>self</span>.<span class='ident'>absolute_pos</span>).<span class='ident'>unwrap_or</span>(<span class='number'>0</span>);
+                <span class='comment'>// Check if number of bytes is within buffer range</span>
+                <span class='kw'>match</span> <span class='ident'>n_bytes</span> <span class='op'>&gt;</span> <span class='number'>0</span> <span class='op'>&amp;&amp;</span> <span class='ident'>n_bytes</span> <span class='op'>&lt;</span> <span class='self'>self</span>.<span class='ident'>available</span>() <span class='kw'>as</span> <span class='ident'>u64</span> {
+                    <span class='bool-val'>true</span> <span class='op'>=&gt;</span> <span class='self'>self</span>.<span class='ident'>seek_forward</span>(<span class='ident'>n_bytes</span> <span class='kw'>as</span> <span class='ident'>usize</span>),
+                    <span class='bool-val'>false</span> <span class='op'>=&gt;</span> <span class='self'>self</span>.<span class='ident'>sync_and_flush</span>(<span class='ident'>pos</span>)
+                }
             }
+            _ <span class='op'>=&gt;</span> <span class='self'>self</span>.<span class='ident'>sync_and_flush</span>(<span class='ident'>pos</span>)
         }
     }
 }
@@ -969,97 +1032,127 @@
     <span class='attribute'>#[<span class='ident'>test</span>]</span>
     <span class='kw'>fn</span> <span class='ident'>seek_start</span>() {
         <span class='kw'>let</span> <span class='ident'>inner</span> <span class='op'>=</span> <span class='ident'>Cursor</span>::<span class='ident'>new</span>([<span class='number'>0</span>, <span class='number'>1</span>, <span class='number'>2</span>, <span class='number'>3</span>, <span class='number'>4</span>, <span class='number'>5</span>, <span class='number'>6</span>, <span class='number'>7</span>, <span class='number'>8</span>, <span class='number'>9</span>, <span class='number'>10</span>, <span class='number'>11</span>, <span class='number'>12</span>, <span class='number'>13</span>, <span class='number'>14</span>, <span class='number'>15</span>, <span class='number'>16</span>]);
-        <span class='kw'>let</span> <span class='kw-2'>mut</span> <span class='ident'>reader</span> <span class='op'>=</span> <span class='ident'>BufReader</span>::<span class='ident'>with_capacity</span>(<span class='number'>2</span>, <span class='ident'>inner</span>);
+        <span class='kw'>let</span> <span class='kw-2'>mut</span> <span class='ident'>reader</span> <span class='op'>=</span> <span class='ident'>BufReader</span>::<span class='ident'>with_capacity</span>(<span class='number'>10</span>, <span class='ident'>inner</span>);
 
-        <span class='ident'>reader</span>.<span class='ident'>seek</span>(<span class='ident'>SeekFrom</span>::<span class='ident'>Start</span>(<span class='number'>10</span>)).<span class='ident'>unwrap</span>();
+        <span class='ident'>reader</span>.<span class='ident'>seek</span>(<span class='ident'>SeekFrom</span>::<span class='ident'>Start</span>(<span class='number'>3</span>)).<span class='ident'>unwrap</span>();
         <span class='kw'>let</span> <span class='kw-2'>mut</span> <span class='ident'>buf</span> <span class='op'>=</span> [<span class='number'>0</span>; <span class='number'>8</span>];
         <span class='ident'>reader</span>.<span class='ident'>read</span>(<span class='kw-2'>&amp;</span><span class='kw-2'>mut</span> <span class='ident'>buf</span>).<span class='ident'>unwrap</span>();
-        <span class='macro'>assert_eq</span><span class='macro'>!</span>(<span class='ident'>buf</span>, [<span class='number'>10</span>, <span class='number'>11</span>, <span class='number'>12</span>, <span class='number'>13</span>, <span class='number'>14</span>, <span class='number'>15</span>, <span class='number'>16</span>, <span class='number'>0</span>]);
+        <span class='macro'>assert_eq</span><span class='macro'>!</span>(<span class='ident'>buf</span>, [<span class='number'>3</span>, <span class='number'>4</span>, <span class='number'>5</span>, <span class='number'>6</span>, <span class='number'>7</span>, <span class='number'>8</span>, <span class='number'>9</span>, <span class='number'>10</span>]);
+
+        <span class='ident'>reader</span>.<span class='ident'>seek</span>(<span class='ident'>SeekFrom</span>::<span class='ident'>Start</span>(<span class='number'>0</span>)).<span class='ident'>unwrap</span>();
+        <span class='kw'>let</span> <span class='kw-2'>mut</span> <span class='ident'>buf</span> <span class='op'>=</span> [<span class='number'>0</span>; <span class='number'>8</span>];
+        <span class='ident'>reader</span>.<span class='ident'>read</span>(<span class='kw-2'>&amp;</span><span class='kw-2'>mut</span> <span class='ident'>buf</span>).<span class='ident'>unwrap</span>();
+        <span class='macro'>assert_eq</span><span class='macro'>!</span>(<span class='ident'>buf</span>, [<span class='number'>0</span>, <span class='number'>1</span>, <span class='number'>2</span>, <span class='number'>3</span>, <span class='number'>4</span>, <span class='number'>5</span>, <span class='number'>6</span>, <span class='number'>7</span>]);
 
         <span class='ident'>reader</span>.<span class='ident'>seek</span>(<span class='ident'>SeekFrom</span>::<span class='ident'>Start</span>(<span class='number'>13</span>)).<span class='ident'>unwrap</span>();
         <span class='kw'>let</span> <span class='kw-2'>mut</span> <span class='ident'>buf</span> <span class='op'>=</span> [<span class='number'>0</span>; <span class='number'>8</span>];
         <span class='ident'>reader</span>.<span class='ident'>read</span>(<span class='kw-2'>&amp;</span><span class='kw-2'>mut</span> <span class='ident'>buf</span>).<span class='ident'>unwrap</span>();
         <span class='macro'>assert_eq</span><span class='macro'>!</span>(<span class='ident'>buf</span>, [<span class='number'>13</span>, <span class='number'>14</span>, <span class='number'>15</span>, <span class='number'>16</span>, <span class='number'>0</span>, <span class='number'>0</span>, <span class='number'>0</span>, <span class='number'>0</span>]);
+
+        <span class='ident'>reader</span>.<span class='ident'>seek</span>(<span class='ident'>SeekFrom</span>::<span class='ident'>Start</span>(<span class='number'>0</span>)).<span class='ident'>unwrap</span>();
+        <span class='kw'>let</span> <span class='kw-2'>mut</span> <span class='ident'>buf</span> <span class='op'>=</span> [<span class='number'>0</span>; <span class='number'>8</span>];
+        <span class='ident'>reader</span>.<span class='ident'>read</span>(<span class='kw-2'>&amp;</span><span class='kw-2'>mut</span> <span class='ident'>buf</span>).<span class='ident'>unwrap</span>();
+        <span class='macro'>assert_eq</span><span class='macro'>!</span>(<span class='ident'>buf</span>, [<span class='number'>0</span>, <span class='number'>1</span>, <span class='number'>2</span>, <span class='number'>3</span>, <span class='number'>4</span>, <span class='number'>5</span>, <span class='number'>6</span>, <span class='number'>7</span>]);
     }
 
     <span class='attribute'>#[<span class='ident'>test</span>]</span>
     <span class='kw'>fn</span> <span class='ident'>seek_start_std</span>() {
         <span class='kw'>let</span> <span class='ident'>inner</span> <span class='op'>=</span> <span class='ident'>Cursor</span>::<span class='ident'>new</span>([<span class='number'>0</span>, <span class='number'>1</span>, <span class='number'>2</span>, <span class='number'>3</span>, <span class='number'>4</span>, <span class='number'>5</span>, <span class='number'>6</span>, <span class='number'>7</span>, <span class='number'>8</span>, <span class='number'>9</span>, <span class='number'>10</span>, <span class='number'>11</span>, <span class='number'>12</span>, <span class='number'>13</span>, <span class='number'>14</span>, <span class='number'>15</span>, <span class='number'>16</span>]);
-        <span class='kw'>let</span> <span class='kw-2'>mut</span> <span class='ident'>reader</span> <span class='op'>=</span> <span class='ident'>io</span>::<span class='ident'>BufReader</span>::<span class='ident'>with_capacity</span>(<span class='number'>2</span>, <span class='ident'>inner</span>);
+        <span class='kw'>let</span> <span class='kw-2'>mut</span> <span class='ident'>reader</span> <span class='op'>=</span> <span class='ident'>io</span>::<span class='ident'>BufReader</span>::<span class='ident'>with_capacity</span>(<span class='number'>10</span>, <span class='ident'>inner</span>);
 
-        <span class='ident'>reader</span>.<span class='ident'>seek</span>(<span class='ident'>SeekFrom</span>::<span class='ident'>Start</span>(<span class='number'>10</span>)).<span class='ident'>unwrap</span>();
+        <span class='ident'>reader</span>.<span class='ident'>seek</span>(<span class='ident'>SeekFrom</span>::<span class='ident'>Start</span>(<span class='number'>3</span>)).<span class='ident'>unwrap</span>();
         <span class='kw'>let</span> <span class='kw-2'>mut</span> <span class='ident'>buf</span> <span class='op'>=</span> [<span class='number'>0</span>; <span class='number'>8</span>];
         <span class='ident'>reader</span>.<span class='ident'>read</span>(<span class='kw-2'>&amp;</span><span class='kw-2'>mut</span> <span class='ident'>buf</span>).<span class='ident'>unwrap</span>();
-        <span class='macro'>assert_eq</span><span class='macro'>!</span>(<span class='ident'>buf</span>, [<span class='number'>10</span>, <span class='number'>11</span>, <span class='number'>12</span>, <span class='number'>13</span>, <span class='number'>14</span>, <span class='number'>15</span>, <span class='number'>16</span>, <span class='number'>0</span>]);
+        <span class='macro'>assert_eq</span><span class='macro'>!</span>(<span class='ident'>buf</span>, [<span class='number'>3</span>, <span class='number'>4</span>, <span class='number'>5</span>, <span class='number'>6</span>, <span class='number'>7</span>, <span class='number'>8</span>, <span class='number'>9</span>, <span class='number'>10</span>]);
+
+        <span class='ident'>reader</span>.<span class='ident'>seek</span>(<span class='ident'>SeekFrom</span>::<span class='ident'>Start</span>(<span class='number'>0</span>)).<span class='ident'>unwrap</span>();
+        <span class='kw'>let</span> <span class='kw-2'>mut</span> <span class='ident'>buf</span> <span class='op'>=</span> [<span class='number'>0</span>; <span class='number'>8</span>];
+        <span class='ident'>reader</span>.<span class='ident'>read</span>(<span class='kw-2'>&amp;</span><span class='kw-2'>mut</span> <span class='ident'>buf</span>).<span class='ident'>unwrap</span>();
+        <span class='macro'>assert_eq</span><span class='macro'>!</span>(<span class='ident'>buf</span>, [<span class='number'>0</span>, <span class='number'>1</span>, <span class='number'>2</span>, <span class='number'>3</span>, <span class='number'>4</span>, <span class='number'>5</span>, <span class='number'>6</span>, <span class='number'>7</span>]);
 
         <span class='ident'>reader</span>.<span class='ident'>seek</span>(<span class='ident'>SeekFrom</span>::<span class='ident'>Start</span>(<span class='number'>13</span>)).<span class='ident'>unwrap</span>();
         <span class='kw'>let</span> <span class='kw-2'>mut</span> <span class='ident'>buf</span> <span class='op'>=</span> [<span class='number'>0</span>; <span class='number'>8</span>];
         <span class='ident'>reader</span>.<span class='ident'>read</span>(<span class='kw-2'>&amp;</span><span class='kw-2'>mut</span> <span class='ident'>buf</span>).<span class='ident'>unwrap</span>();
         <span class='macro'>assert_eq</span><span class='macro'>!</span>(<span class='ident'>buf</span>, [<span class='number'>13</span>, <span class='number'>14</span>, <span class='number'>15</span>, <span class='number'>16</span>, <span class='number'>0</span>, <span class='number'>0</span>, <span class='number'>0</span>, <span class='number'>0</span>]);
+
+        <span class='ident'>reader</span>.<span class='ident'>seek</span>(<span class='ident'>SeekFrom</span>::<span class='ident'>Start</span>(<span class='number'>0</span>)).<span class='ident'>unwrap</span>();
+        <span class='kw'>let</span> <span class='kw-2'>mut</span> <span class='ident'>buf</span> <span class='op'>=</span> [<span class='number'>0</span>; <span class='number'>8</span>];
+        <span class='ident'>reader</span>.<span class='ident'>read</span>(<span class='kw-2'>&amp;</span><span class='kw-2'>mut</span> <span class='ident'>buf</span>).<span class='ident'>unwrap</span>();
+        <span class='macro'>assert_eq</span><span class='macro'>!</span>(<span class='ident'>buf</span>, [<span class='number'>0</span>, <span class='number'>1</span>, <span class='number'>2</span>, <span class='number'>3</span>, <span class='number'>4</span>, <span class='number'>5</span>, <span class='number'>6</span>, <span class='number'>7</span>]);
     }
 
     <span class='attribute'>#[<span class='ident'>test</span>]</span>
     <span class='kw'>fn</span> <span class='ident'>seek_current_positive</span>() {
         <span class='kw'>let</span> <span class='ident'>inner</span> <span class='op'>=</span> <span class='ident'>Cursor</span>::<span class='ident'>new</span>([<span class='number'>0</span>, <span class='number'>1</span>, <span class='number'>2</span>, <span class='number'>3</span>, <span class='number'>4</span>, <span class='number'>5</span>, <span class='number'>6</span>, <span class='number'>7</span>, <span class='number'>8</span>, <span class='number'>9</span>, <span class='number'>10</span>, <span class='number'>11</span>, <span class='number'>12</span>, <span class='number'>13</span>, <span class='number'>14</span>, <span class='number'>15</span>, <span class='number'>16</span>]);
-        <span class='kw'>let</span> <span class='kw-2'>mut</span> <span class='ident'>reader</span> <span class='op'>=</span> <span class='ident'>BufReader</span>::<span class='ident'>with_capacity</span>(<span class='number'>2</span>, <span class='ident'>inner</span>);
+        <span class='kw'>let</span> <span class='kw-2'>mut</span> <span class='ident'>reader</span> <span class='op'>=</span> <span class='ident'>BufReader</span>::<span class='ident'>with_capacity</span>(<span class='number'>20</span>, <span class='ident'>inner</span>);
 
-        <span class='ident'>reader</span>.<span class='ident'>seek</span>(<span class='ident'>SeekFrom</span>::<span class='ident'>Current</span>(<span class='number'>4</span>)).<span class='ident'>unwrap</span>();
+        <span class='ident'>reader</span>.<span class='ident'>seek</span>(<span class='ident'>SeekFrom</span>::<span class='ident'>Current</span>(<span class='number'>2</span>)).<span class='ident'>unwrap</span>();
         <span class='kw'>let</span> <span class='kw-2'>mut</span> <span class='ident'>buf</span> <span class='op'>=</span> [<span class='number'>0</span>; <span class='number'>8</span>];
         <span class='ident'>reader</span>.<span class='ident'>read</span>(<span class='kw-2'>&amp;</span><span class='kw-2'>mut</span> <span class='ident'>buf</span>).<span class='ident'>unwrap</span>();
-        <span class='macro'>assert_eq</span><span class='macro'>!</span>(<span class='ident'>buf</span>, [<span class='number'>4</span>, <span class='number'>5</span>, <span class='number'>6</span>, <span class='number'>7</span>, <span class='number'>8</span>, <span class='number'>9</span>, <span class='number'>10</span>, <span class='number'>11</span>]);
+        <span class='macro'>assert_eq</span><span class='macro'>!</span>(<span class='ident'>buf</span>, [<span class='number'>2</span>, <span class='number'>3</span>, <span class='number'>4</span>, <span class='number'>5</span>, <span class='number'>6</span>, <span class='number'>7</span>, <span class='number'>8</span>, <span class='number'>9</span>]);
 
         <span class='ident'>reader</span>.<span class='ident'>seek</span>(<span class='ident'>SeekFrom</span>::<span class='ident'>Current</span>(<span class='number'>6</span>)).<span class='ident'>unwrap</span>();
         <span class='kw'>let</span> <span class='kw-2'>mut</span> <span class='ident'>buf</span> <span class='op'>=</span> [<span class='number'>0</span>; <span class='number'>8</span>];
         <span class='ident'>reader</span>.<span class='ident'>read</span>(<span class='kw-2'>&amp;</span><span class='kw-2'>mut</span> <span class='ident'>buf</span>).<span class='ident'>unwrap</span>();
-        <span class='macro'>assert_eq</span><span class='macro'>!</span>(<span class='ident'>buf</span>, [<span class='number'>0</span>, <span class='number'>0</span>, <span class='number'>0</span>, <span class='number'>0</span>, <span class='number'>0</span>, <span class='number'>0</span>, <span class='number'>0</span>, <span class='number'>0</span>]);
+        <span class='macro'>assert_eq</span><span class='macro'>!</span>(<span class='ident'>buf</span>, [<span class='number'>16</span>, <span class='number'>0</span>, <span class='number'>0</span>, <span class='number'>0</span>, <span class='number'>0</span>, <span class='number'>0</span>, <span class='number'>0</span>, <span class='number'>0</span>]);
     }
 
     <span class='attribute'>#[<span class='ident'>test</span>]</span>
     <span class='kw'>fn</span> <span class='ident'>seek_current_positive_std</span>() {
         <span class='kw'>let</span> <span class='ident'>inner</span> <span class='op'>=</span> <span class='ident'>Cursor</span>::<span class='ident'>new</span>([<span class='number'>0</span>, <span class='number'>1</span>, <span class='number'>2</span>, <span class='number'>3</span>, <span class='number'>4</span>, <span class='number'>5</span>, <span class='number'>6</span>, <span class='number'>7</span>, <span class='number'>8</span>, <span class='number'>9</span>, <span class='number'>10</span>, <span class='number'>11</span>, <span class='number'>12</span>, <span class='number'>13</span>, <span class='number'>14</span>, <span class='number'>15</span>, <span class='number'>16</span>]);
-        <span class='kw'>let</span> <span class='kw-2'>mut</span> <span class='ident'>reader</span> <span class='op'>=</span> <span class='ident'>io</span>::<span class='ident'>BufReader</span>::<span class='ident'>with_capacity</span>(<span class='number'>2</span>, <span class='ident'>inner</span>);
+        <span class='kw'>let</span> <span class='kw-2'>mut</span> <span class='ident'>reader</span> <span class='op'>=</span> <span class='ident'>io</span>::<span class='ident'>BufReader</span>::<span class='ident'>with_capacity</span>(<span class='number'>20</span>, <span class='ident'>inner</span>);
 
-        <span class='ident'>reader</span>.<span class='ident'>seek</span>(<span class='ident'>SeekFrom</span>::<span class='ident'>Current</span>(<span class='number'>4</span>)).<span class='ident'>unwrap</span>();
+        <span class='ident'>reader</span>.<span class='ident'>seek</span>(<span class='ident'>SeekFrom</span>::<span class='ident'>Current</span>(<span class='number'>2</span>)).<span class='ident'>unwrap</span>();
         <span class='kw'>let</span> <span class='kw-2'>mut</span> <span class='ident'>buf</span> <span class='op'>=</span> [<span class='number'>0</span>; <span class='number'>8</span>];
         <span class='ident'>reader</span>.<span class='ident'>read</span>(<span class='kw-2'>&amp;</span><span class='kw-2'>mut</span> <span class='ident'>buf</span>).<span class='ident'>unwrap</span>();
-        <span class='macro'>assert_eq</span><span class='macro'>!</span>(<span class='ident'>buf</span>, [<span class='number'>4</span>, <span class='number'>5</span>, <span class='number'>6</span>, <span class='number'>7</span>, <span class='number'>8</span>, <span class='number'>9</span>, <span class='number'>10</span>, <span class='number'>11</span>]);
+        <span class='macro'>assert_eq</span><span class='macro'>!</span>(<span class='ident'>buf</span>, [<span class='number'>2</span>, <span class='number'>3</span>, <span class='number'>4</span>, <span class='number'>5</span>, <span class='number'>6</span>, <span class='number'>7</span>, <span class='number'>8</span>, <span class='number'>9</span>]);
 
         <span class='ident'>reader</span>.<span class='ident'>seek</span>(<span class='ident'>SeekFrom</span>::<span class='ident'>Current</span>(<span class='number'>6</span>)).<span class='ident'>unwrap</span>();
         <span class='kw'>let</span> <span class='kw-2'>mut</span> <span class='ident'>buf</span> <span class='op'>=</span> [<span class='number'>0</span>; <span class='number'>8</span>];
         <span class='ident'>reader</span>.<span class='ident'>read</span>(<span class='kw-2'>&amp;</span><span class='kw-2'>mut</span> <span class='ident'>buf</span>).<span class='ident'>unwrap</span>();
-        <span class='macro'>assert_eq</span><span class='macro'>!</span>(<span class='ident'>buf</span>, [<span class='number'>0</span>, <span class='number'>0</span>, <span class='number'>0</span>, <span class='number'>0</span>, <span class='number'>0</span>, <span class='number'>0</span>, <span class='number'>0</span>, <span class='number'>0</span>]);
+        <span class='macro'>assert_eq</span><span class='macro'>!</span>(<span class='ident'>buf</span>, [<span class='number'>16</span>, <span class='number'>0</span>, <span class='number'>0</span>, <span class='number'>0</span>, <span class='number'>0</span>, <span class='number'>0</span>, <span class='number'>0</span>, <span class='number'>0</span>]);
     }
 
     <span class='attribute'>#[<span class='ident'>test</span>]</span>
     <span class='kw'>fn</span> <span class='ident'>seek_current_negative</span>() {
         <span class='kw'>let</span> <span class='ident'>inner</span> <span class='op'>=</span> <span class='ident'>Cursor</span>::<span class='ident'>new</span>([<span class='number'>0</span>, <span class='number'>1</span>, <span class='number'>2</span>, <span class='number'>3</span>, <span class='number'>4</span>, <span class='number'>5</span>, <span class='number'>6</span>, <span class='number'>7</span>, <span class='number'>8</span>, <span class='number'>9</span>, <span class='number'>10</span>, <span class='number'>11</span>, <span class='number'>12</span>, <span class='number'>13</span>, <span class='number'>14</span>, <span class='number'>15</span>, <span class='number'>16</span>]);
-        <span class='kw'>let</span> <span class='kw-2'>mut</span> <span class='ident'>reader</span> <span class='op'>=</span> <span class='ident'>BufReader</span>::<span class='ident'>with_capacity</span>(<span class='number'>2</span>, <span class='ident'>inner</span>);
+        <span class='kw'>let</span> <span class='kw-2'>mut</span> <span class='ident'>reader</span> <span class='op'>=</span> <span class='ident'>BufReader</span>::<span class='ident'>with_capacity</span>(<span class='number'>3</span>, <span class='ident'>inner</span>);
 
         <span class='ident'>reader</span>.<span class='ident'>seek</span>(<span class='ident'>SeekFrom</span>::<span class='ident'>Current</span>(<span class='number'>4</span>)).<span class='ident'>unwrap</span>();
-        <span class='kw'>let</span> <span class='kw-2'>mut</span> <span class='ident'>buf</span> <span class='op'>=</span> [<span class='number'>0</span>; <span class='number'>8</span>];
+        <span class='kw'>let</span> <span class='kw-2'>mut</span> <span class='ident'>buf</span> <span class='op'>=</span> [<span class='number'>0</span>; <span class='number'>4</span>];
         <span class='ident'>reader</span>.<span class='ident'>read</span>(<span class='kw-2'>&amp;</span><span class='kw-2'>mut</span> <span class='ident'>buf</span>).<span class='ident'>unwrap</span>();
-        <span class='macro'>assert_eq</span><span class='macro'>!</span>(<span class='ident'>buf</span>, [<span class='number'>4</span>, <span class='number'>5</span>, <span class='number'>6</span>, <span class='number'>7</span>, <span class='number'>8</span>, <span class='number'>9</span>, <span class='number'>10</span>, <span class='number'>11</span>]);
+        <span class='macro'>assert_eq</span><span class='macro'>!</span>(<span class='ident'>buf</span>, [<span class='number'>4</span>, <span class='number'>5</span>, <span class='number'>6</span>, <span class='number'>7</span>]);
 
         <span class='ident'>reader</span>.<span class='ident'>seek</span>(<span class='ident'>SeekFrom</span>::<span class='ident'>Current</span>(<span class='op'>-</span><span class='number'>2</span>)).<span class='ident'>unwrap</span>();
-        <span class='kw'>let</span> <span class='kw-2'>mut</span> <span class='ident'>buf</span> <span class='op'>=</span> [<span class='number'>0</span>; <span class='number'>8</span>];
+        <span class='kw'>let</span> <span class='kw-2'>mut</span> <span class='ident'>buf</span> <span class='op'>=</span> [<span class='number'>0</span>; <span class='number'>4</span>];
         <span class='ident'>reader</span>.<span class='ident'>read</span>(<span class='kw-2'>&amp;</span><span class='kw-2'>mut</span> <span class='ident'>buf</span>).<span class='ident'>unwrap</span>();
-        <span class='macro'>assert_eq</span><span class='macro'>!</span>(<span class='ident'>buf</span>, [<span class='number'>10</span>, <span class='number'>11</span>, <span class='number'>12</span>, <span class='number'>13</span>, <span class='number'>14</span>, <span class='number'>15</span>, <span class='number'>16</span>, <span class='number'>0</span>]);
+        <span class='macro'>assert_eq</span><span class='macro'>!</span>(<span class='ident'>buf</span>, [<span class='number'>6</span>, <span class='number'>7</span>, <span class='number'>8</span>, <span class='number'>9</span>]);
+
+        <span class='ident'>reader</span>.<span class='ident'>seek</span>(<span class='ident'>SeekFrom</span>::<span class='ident'>Current</span>(<span class='op'>-</span><span class='number'>4</span>)).<span class='ident'>unwrap</span>();
+        <span class='kw'>let</span> <span class='kw-2'>mut</span> <span class='ident'>buf</span> <span class='op'>=</span> [<span class='number'>0</span>; <span class='number'>4</span>];
+        <span class='ident'>reader</span>.<span class='ident'>read</span>(<span class='kw-2'>&amp;</span><span class='kw-2'>mut</span> <span class='ident'>buf</span>).<span class='ident'>unwrap</span>();
+        <span class='macro'>assert_eq</span><span class='macro'>!</span>(<span class='ident'>buf</span>, [<span class='number'>6</span>, <span class='number'>7</span>, <span class='number'>8</span>, <span class='number'>9</span>]);
     }
 
     <span class='attribute'>#[<span class='ident'>test</span>]</span>
     <span class='kw'>fn</span> <span class='ident'>seek_current_negative_std</span>() {
         <span class='kw'>let</span> <span class='ident'>inner</span> <span class='op'>=</span> <span class='ident'>Cursor</span>::<span class='ident'>new</span>([<span class='number'>0</span>, <span class='number'>1</span>, <span class='number'>2</span>, <span class='number'>3</span>, <span class='number'>4</span>, <span class='number'>5</span>, <span class='number'>6</span>, <span class='number'>7</span>, <span class='number'>8</span>, <span class='number'>9</span>, <span class='number'>10</span>, <span class='number'>11</span>, <span class='number'>12</span>, <span class='number'>13</span>, <span class='number'>14</span>, <span class='number'>15</span>, <span class='number'>16</span>]);
-        <span class='kw'>let</span> <span class='kw-2'>mut</span> <span class='ident'>reader</span> <span class='op'>=</span> <span class='ident'>io</span>::<span class='ident'>BufReader</span>::<span class='ident'>with_capacity</span>(<span class='number'>2</span>, <span class='ident'>inner</span>);
+        <span class='kw'>let</span> <span class='kw-2'>mut</span> <span class='ident'>reader</span> <span class='op'>=</span> <span class='ident'>io</span>::<span class='ident'>BufReader</span>::<span class='ident'>with_capacity</span>(<span class='number'>3</span>, <span class='ident'>inner</span>);
 
         <span class='ident'>reader</span>.<span class='ident'>seek</span>(<span class='ident'>SeekFrom</span>::<span class='ident'>Current</span>(<span class='number'>4</span>)).<span class='ident'>unwrap</span>();
-        <span class='kw'>let</span> <span class='kw-2'>mut</span> <span class='ident'>buf</span> <span class='op'>=</span> [<span class='number'>0</span>; <span class='number'>8</span>];
+        <span class='kw'>let</span> <span class='kw-2'>mut</span> <span class='ident'>buf</span> <span class='op'>=</span> [<span class='number'>0</span>; <span class='number'>4</span>];
         <span class='ident'>reader</span>.<span class='ident'>read</span>(<span class='kw-2'>&amp;</span><span class='kw-2'>mut</span> <span class='ident'>buf</span>).<span class='ident'>unwrap</span>();
-        <span class='macro'>assert_eq</span><span class='macro'>!</span>(<span class='ident'>buf</span>, [<span class='number'>4</span>, <span class='number'>5</span>, <span class='number'>6</span>, <span class='number'>7</span>, <span class='number'>8</span>, <span class='number'>9</span>, <span class='number'>10</span>, <span class='number'>11</span>]);
+        <span class='macro'>assert_eq</span><span class='macro'>!</span>(<span class='ident'>buf</span>, [<span class='number'>4</span>, <span class='number'>5</span>, <span class='number'>6</span>, <span class='number'>7</span>]);
 
         <span class='ident'>reader</span>.<span class='ident'>seek</span>(<span class='ident'>SeekFrom</span>::<span class='ident'>Current</span>(<span class='op'>-</span><span class='number'>2</span>)).<span class='ident'>unwrap</span>();
-        <span class='kw'>let</span> <span class='kw-2'>mut</span> <span class='ident'>buf</span> <span class='op'>=</span> [<span class='number'>0</span>; <span class='number'>8</span>];
+        <span class='kw'>let</span> <span class='kw-2'>mut</span> <span class='ident'>buf</span> <span class='op'>=</span> [<span class='number'>0</span>; <span class='number'>4</span>];
         <span class='ident'>reader</span>.<span class='ident'>read</span>(<span class='kw-2'>&amp;</span><span class='kw-2'>mut</span> <span class='ident'>buf</span>).<span class='ident'>unwrap</span>();
-        <span class='macro'>assert_eq</span><span class='macro'>!</span>(<span class='ident'>buf</span>, [<span class='number'>10</span>, <span class='number'>11</span>, <span class='number'>12</span>, <span class='number'>13</span>, <span class='number'>14</span>, <span class='number'>15</span>, <span class='number'>16</span>, <span class='number'>0</span>]);
+        <span class='macro'>assert_eq</span><span class='macro'>!</span>(<span class='ident'>buf</span>, [<span class='number'>6</span>, <span class='number'>7</span>, <span class='number'>8</span>, <span class='number'>9</span>]);
+
+        <span class='ident'>reader</span>.<span class='ident'>seek</span>(<span class='ident'>SeekFrom</span>::<span class='ident'>Current</span>(<span class='op'>-</span><span class='number'>4</span>)).<span class='ident'>unwrap</span>();
+        <span class='kw'>let</span> <span class='kw-2'>mut</span> <span class='ident'>buf</span> <span class='op'>=</span> [<span class='number'>0</span>; <span class='number'>4</span>];
+        <span class='ident'>reader</span>.<span class='ident'>read</span>(<span class='kw-2'>&amp;</span><span class='kw-2'>mut</span> <span class='ident'>buf</span>).<span class='ident'>unwrap</span>();
+        <span class='macro'>assert_eq</span><span class='macro'>!</span>(<span class='ident'>buf</span>, [<span class='number'>6</span>, <span class='number'>7</span>, <span class='number'>8</span>, <span class='number'>9</span>]);
     }
 
     <span class='attribute'>#[<span class='ident'>test</span>]</span>
@@ -1092,6 +1185,27 @@
         <span class='kw'>let</span> <span class='kw-2'>mut</span> <span class='ident'>buf</span> <span class='op'>=</span> [<span class='number'>0</span>; <span class='number'>8</span>];
         <span class='ident'>reader</span>.<span class='ident'>read</span>(<span class='kw-2'>&amp;</span><span class='kw-2'>mut</span> <span class='ident'>buf</span>).<span class='ident'>unwrap</span>();
         <span class='macro'>assert_eq</span><span class='macro'>!</span>(<span class='ident'>buf</span>, [<span class='number'>0</span>, <span class='number'>0</span>, <span class='number'>0</span>, <span class='number'>0</span>, <span class='number'>0</span>, <span class='number'>0</span>, <span class='number'>0</span>, <span class='number'>0</span>]);
+    }
+
+    <span class='attribute'>#[<span class='ident'>test</span>]</span>
+    <span class='kw'>fn</span> <span class='ident'>into_inner</span>() {
+        <span class='kw'>let</span> <span class='ident'>inner</span> <span class='op'>=</span> <span class='ident'>Cursor</span>::<span class='ident'>new</span>([<span class='number'>0</span>, <span class='number'>1</span>, <span class='number'>2</span>, <span class='number'>3</span>, <span class='number'>4</span>, <span class='number'>5</span>, <span class='number'>6</span>, <span class='number'>7</span>, <span class='number'>8</span>, <span class='number'>9</span>, <span class='number'>10</span>, <span class='number'>11</span>, <span class='number'>12</span>, <span class='number'>13</span>, <span class='number'>14</span>, <span class='number'>15</span>, <span class='number'>16</span>]);
+        <span class='kw'>let</span> <span class='kw-2'>mut</span> <span class='ident'>reader</span> <span class='op'>=</span> <span class='ident'>BufReader</span>::<span class='ident'>with_capacity</span>(<span class='number'>4</span>, <span class='ident'>inner</span>);
+
+        <span class='ident'>reader</span>.<span class='ident'>seek</span>(<span class='ident'>SeekFrom</span>::<span class='ident'>Current</span>(<span class='number'>5</span>)).<span class='ident'>unwrap</span>();
+        <span class='kw'>let</span> <span class='kw-2'>mut</span> <span class='ident'>buf</span> <span class='op'>=</span> [<span class='number'>0</span>; <span class='number'>8</span>];
+        <span class='ident'>reader</span>.<span class='ident'>read</span>(<span class='kw-2'>&amp;</span><span class='kw-2'>mut</span> <span class='ident'>buf</span>).<span class='ident'>unwrap</span>();
+        <span class='macro'>assert_eq</span><span class='macro'>!</span>(<span class='ident'>buf</span>, [<span class='number'>5</span>, <span class='number'>6</span>, <span class='number'>7</span>, <span class='number'>8</span>, <span class='number'>9</span>, <span class='number'>10</span>, <span class='number'>11</span>, <span class='number'>12</span>]);
+        <span class='ident'>reader</span>.<span class='ident'>seek</span>(<span class='ident'>SeekFrom</span>::<span class='ident'>Current</span>(<span class='op'>-</span><span class='number'>2</span>)).<span class='ident'>unwrap</span>();
+
+        <span class='kw'>let</span> <span class='kw-2'>mut</span> <span class='ident'>buf</span> <span class='op'>=</span> [<span class='number'>0</span>; <span class='number'>2</span>];
+        <span class='ident'>reader</span>.<span class='ident'>read</span>(<span class='kw-2'>&amp;</span><span class='kw-2'>mut</span> <span class='ident'>buf</span>).<span class='ident'>unwrap</span>();
+        <span class='macro'>assert_eq</span><span class='macro'>!</span>(<span class='ident'>buf</span>, [<span class='number'>11</span>, <span class='number'>12</span>]);
+
+        <span class='kw'>let</span> <span class='kw-2'>mut</span> <span class='ident'>inner</span> <span class='op'>=</span> <span class='ident'>reader</span>.<span class='ident'>into_inner</span>().<span class='ident'>unwrap</span>();
+        <span class='kw'>let</span> <span class='kw-2'>mut</span> <span class='ident'>buf</span> <span class='op'>=</span> [<span class='number'>0</span>; <span class='number'>8</span>];
+        <span class='ident'>inner</span>.<span class='ident'>read</span>(<span class='kw-2'>&amp;</span><span class='kw-2'>mut</span> <span class='ident'>buf</span>).<span class='ident'>unwrap</span>();
+        <span class='macro'>assert_eq</span><span class='macro'>!</span>(<span class='ident'>buf</span>, [<span class='number'>13</span>, <span class='number'>14</span>, <span class='number'>15</span>, <span class='number'>16</span>, <span class='number'>0</span>, <span class='number'>0</span>, <span class='number'>0</span>, <span class='number'>0</span>]);
     }
 }
 

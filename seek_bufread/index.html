@@ -47,13 +47,10 @@
                    <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">
                        [<span class='inner'>&#x2212;</span>]
                    </a>
-               </span><a id='src-0' class='srclink' href='../src/seek_bufread/src/lib.rs.html#11-610' title='goto source code'>[src]</a></span></h1>
-<div class='docblock'><p><a href="https://github.com/gcarq/seek_bufread">
-<img src="https://s3.amazonaws.com/github/ribbons/forkme_right_red_aa0000.png" style="position: absolute; top: 0; right: 0; border: 0; margin-top: 55px" alt="Fork me on GitHub">
-</a></p>
+               </span><a id='src-0' class='srclink' href='../src/seek_bufread/src/lib.rs.html#10-667' title='goto source code'>[src]</a></span></h1>
+<div class='docblock'><p>The <code>BufReader</code> is a drop-in replacement for <code>std::io::BufReader</code> with seeking support.</p>
 
-<p>The <code>BufReader</code> is a drop-in replacement for <code>std::io::BufReader</code> with seeking support.
-If <code>.seek(SeekFrom::Current(n))</code> is called and <code>n</code> is in range of the internal buffer the
+<p>If <code>.seek(SeekFrom::Current(n))</code> is called and <code>n</code> is in range of the internal buffer the
 underlying reader is not invoked. This has the side effect that you can no longer access
 the underlying buffer directly after being consumed by <code>BufReader</code>,
 because its position could be out of sync.</p>
@@ -70,7 +67,7 @@ because its position could be out of sync.</p>
 <span class='kw'>let</span> <span class='kw-2'>mut</span> <span class='ident'>buf</span> <span class='op'>=</span> [<span class='number'>0</span>; <span class='number'>8</span>];
 
 <span class='comment'>// read bytes from internal buffer</span>
-<span class='ident'>reader</span>.<span class='ident'>read</span>(<span class='kw-2'>&amp;</span><span class='kw-2'>mut</span> <span class='ident'>buf</span>).<span class='ident'>unwrap</span>();;
+<span class='ident'>reader</span>.<span class='ident'>read</span>(<span class='kw-2'>&amp;</span><span class='kw-2'>mut</span> <span class='ident'>buf</span>).<span class='ident'>unwrap</span>();
 <span class='macro'>assert_eq</span><span class='macro'>!</span>(<span class='ident'>buf</span>, [<span class='number'>4</span>, <span class='number'>5</span>, <span class='number'>6</span>, <span class='number'>7</span>, <span class='number'>8</span>, <span class='number'>9</span>, <span class='number'>10</span>, <span class='number'>11</span>]);<a class='test-arrow' target='_blank' href=''>Run</a></pre>
 </div><h2 id='structs' class='section-header'><a href="#structs">Structs</a></h2>
 <table>
