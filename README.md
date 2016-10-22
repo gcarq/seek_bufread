@@ -20,7 +20,7 @@ reader.seek(SeekFrom::Current(4)).unwrap();
 let mut buf = [0; 8];
 
 // read bytes from internal buffer
-reader.read(&mut buf).unwrap();;
+reader.read(&mut buf).unwrap();
 assert_eq!(buf, [4, 5, 6, 7, 8, 9, 10, 11]);
 ```
 
