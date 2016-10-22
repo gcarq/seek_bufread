@@ -7,12 +7,8 @@
 // <LICENSE-MIT or http://opensource.org/licenses/MIT>, at your
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
-
-//! <a href="https://github.com/gcarq/seek_bufread">
-//! <img src="https://s3.amazonaws.com/github/ribbons/forkme_right_red_aa0000.png" style="position: absolute; top: 0; right: 0; border: 0; margin-top: 55px" alt="Fork me on GitHub">
-//! </a>
-//!
 //! The `BufReader` is a drop-in replacement for `std::io::BufReader` with seeking support.
+//!
 //! If `.seek(SeekFrom::Current(n))` is called and `n` is in range of the internal buffer the
 //! underlying reader is not invoked. This has the side effect that you can no longer access
 //! the underlying buffer directly after being consumed by `BufReader`,
@@ -31,7 +27,7 @@
 //! let mut buf = [0; 8];
 //!
 //! // read bytes from internal buffer
-//! reader.read(&mut buf).unwrap();;
+//! reader.read(&mut buf).unwrap();
 //! assert_eq!(buf, [4, 5, 6, 7, 8, 9, 10, 11]);
 //! ```
 
@@ -147,15 +143,17 @@ impl<R: Read + Seek> BufReader<R> {
     }
 
     /// Seeks `n` bytes backwards from current position
-    fn seek_backward(&mut self, n: usize) -> io::Result<u64> {
-        if self.buf_pos - n > 0 {
+    fn seek_backward(&mut self, n: i64) -> io::Result<u64> {
+        let n_abs = n.abs() as usize;
+        if self.buf_pos.checked_sub(n_abs).is_some() {
             // Seek our internal buffer
-            self.absolute_pos -= n as u64;
-            self.buf_pos -= n;
+            self.absolute_pos -= n_abs as u64;
+            self.buf_pos -= n_abs;
             Ok(self.absolute_pos)
         } else {
             // Out of scope. Seek inner reader to new position and reset buffer
-            self.sync_and_flush(SeekFrom::Current(n as i64 * -1))
+            let new_pos = self.absolute_pos - n_abs as u64;
+            self.sync_and_flush(SeekFrom::Start(new_pos))
         }
     }
 
@@ -166,7 +164,8 @@ impl<R: Read + Seek> BufReader<R> {
             Ok(self.absolute_pos)
         } else {
             // Out of scope. Seek inner reader to new position and reset buffer
-            self.sync_and_flush(SeekFrom::Current(n as i64))
+            let new_pos = self.absolute_pos + n as u64;
+            self.sync_and_flush(SeekFrom::Start(new_pos))
         }
     }
 }
@@ -221,14 +220,23 @@ impl<R: Read + Seek> Seek for BufReader<R> {
     fn seek(&mut self, pos: SeekFrom) -> io::Result<u64> {
         match pos {
             SeekFrom::Current(n) => {
-                match n > 0 {
+                match n >= 0 {
                     true => self.seek_forward(n as usize),
-                    false => self.seek_backward(n.abs() as usize)
+                    false => self.seek_backward(n)
                 }
             }
-            SeekFrom::Start(_) | SeekFrom::End(_) => {
-                self.sync_and_flush(pos)
+            SeekFrom::Start(n) => {
+                let available = self.available() as u64;
+                // Check if n is within bounds
+                match n >= self.absolute_pos && n < self.absolute_pos + available {
+                    true => {
+                        let new_pos = (n - self.absolute_pos) as usize;
+                        self.seek_forward(new_pos)
+                     }
+                    false => self.sync_and_flush(pos)
+                }
             }
+            _ => self.sync_and_flush(pos)
         }
     }
 }
@@ -314,33 +322,53 @@ mod tests {
     #[test]
     fn seek_start() {
         let inner = Cursor::new([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]);
-        let mut reader = BufReader::with_capacity(2, inner);
+        let mut reader = BufReader::with_capacity(4, inner);
 
-        reader.seek(SeekFrom::Start(10)).unwrap();
+        reader.seek(SeekFrom::Start(3)).unwrap();
         let mut buf = [0; 8];
         reader.read(&mut buf).unwrap();
-        assert_eq!(buf, [10, 11, 12, 13, 14, 15, 16, 0]);
+        assert_eq!(buf, [3, 4, 5, 6, 7, 8, 9, 10]);
+
+        reader.seek(SeekFrom::Start(0)).unwrap();
+        let mut buf = [0; 8];
+        reader.read(&mut buf).unwrap();
+        assert_eq!(buf, [0, 1, 2, 3, 4, 5, 6, 7]);
 
         reader.seek(SeekFrom::Start(13)).unwrap();
         let mut buf = [0; 8];
         reader.read(&mut buf).unwrap();
         assert_eq!(buf, [13, 14, 15, 16, 0, 0, 0, 0]);
+
+        reader.seek(SeekFrom::Start(0)).unwrap();
+        let mut buf = [0; 8];
+        reader.read(&mut buf).unwrap();
+        assert_eq!(buf, [0, 1, 2, 3, 4, 5, 6, 7]);
     }
 
     #[test]
     fn seek_start_std() {
         let inner = Cursor::new([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]);
-        let mut reader = io::BufReader::with_capacity(2, inner);
+        let mut reader = io::BufReader::with_capacity(4, inner);
 
-        reader.seek(SeekFrom::Start(10)).unwrap();
+        reader.seek(SeekFrom::Start(3)).unwrap();
         let mut buf = [0; 8];
         reader.read(&mut buf).unwrap();
-        assert_eq!(buf, [10, 11, 12, 13, 14, 15, 16, 0]);
+        assert_eq!(buf, [3, 4, 5, 6, 7, 8, 9, 10]);
+
+        reader.seek(SeekFrom::Start(0)).unwrap();
+        let mut buf = [0; 8];
+        reader.read(&mut buf).unwrap();
+        assert_eq!(buf, [0, 1, 2, 3, 4, 5, 6, 7]);
 
         reader.seek(SeekFrom::Start(13)).unwrap();
         let mut buf = [0; 8];
         reader.read(&mut buf).unwrap();
         assert_eq!(buf, [13, 14, 15, 16, 0, 0, 0, 0]);
+
+        reader.seek(SeekFrom::Start(0)).unwrap();
+        let mut buf = [0; 8];
+        reader.read(&mut buf).unwrap();
+        assert_eq!(buf, [0, 1, 2, 3, 4, 5, 6, 7]);
     }
 
     #[test]
@@ -353,10 +381,10 @@ mod tests {
         reader.read(&mut buf).unwrap();
         assert_eq!(buf, [4, 5, 6, 7, 8, 9, 10, 11]);
 
-        reader.seek(SeekFrom::Current(6)).unwrap();
+        reader.seek(SeekFrom::Current(1)).unwrap();
         let mut buf = [0; 8];
         reader.read(&mut buf).unwrap();
-        assert_eq!(buf, [0, 0, 0, 0, 0, 0, 0, 0]);
+        assert_eq!(buf, [13, 14, 15, 16, 0, 0, 0, 0]);
     }
 
     #[test]
@@ -369,42 +397,52 @@ mod tests {
         reader.read(&mut buf).unwrap();
         assert_eq!(buf, [4, 5, 6, 7, 8, 9, 10, 11]);
 
-        reader.seek(SeekFrom::Current(6)).unwrap();
+        reader.seek(SeekFrom::Current(1)).unwrap();
         let mut buf = [0; 8];
         reader.read(&mut buf).unwrap();
-        assert_eq!(buf, [0, 0, 0, 0, 0, 0, 0, 0]);
+        assert_eq!(buf, [13, 14, 15, 16, 0, 0, 0, 0]);
     }
 
     #[test]
     fn seek_current_negative() {
         let inner = Cursor::new([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]);
-        let mut reader = BufReader::with_capacity(2, inner);
+        let mut reader = BufReader::with_capacity(3, inner);
 
         reader.seek(SeekFrom::Current(4)).unwrap();
-        let mut buf = [0; 8];
+        let mut buf = [0; 4];
         reader.read(&mut buf).unwrap();
-        assert_eq!(buf, [4, 5, 6, 7, 8, 9, 10, 11]);
+        assert_eq!(buf, [4, 5, 6, 7]);
 
         reader.seek(SeekFrom::Current(-2)).unwrap();
-        let mut buf = [0; 8];
+        let mut buf = [0; 4];
         reader.read(&mut buf).unwrap();
-        assert_eq!(buf, [10, 11, 12, 13, 14, 15, 16, 0]);
+        assert_eq!(buf, [6, 7, 8, 9]);
+
+        reader.seek(SeekFrom::Current(-4)).unwrap();
+        let mut buf = [0; 4];
+        reader.read(&mut buf).unwrap();
+        assert_eq!(buf, [6, 7, 8, 9]);
     }
 
     #[test]
     fn seek_current_negative_std() {
         let inner = Cursor::new([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]);
-        let mut reader = io::BufReader::with_capacity(2, inner);
+        let mut reader = io::BufReader::with_capacity(3, inner);
 
         reader.seek(SeekFrom::Current(4)).unwrap();
-        let mut buf = [0; 8];
+        let mut buf = [0; 4];
         reader.read(&mut buf).unwrap();
-        assert_eq!(buf, [4, 5, 6, 7, 8, 9, 10, 11]);
+        assert_eq!(buf, [4, 5, 6, 7]);
 
         reader.seek(SeekFrom::Current(-2)).unwrap();
-        let mut buf = [0; 8];
+        let mut buf = [0; 4];
         reader.read(&mut buf).unwrap();
-        assert_eq!(buf, [10, 11, 12, 13, 14, 15, 16, 0]);
+        assert_eq!(buf, [6, 7, 8, 9]);
+
+        reader.seek(SeekFrom::Current(-4)).unwrap();
+        let mut buf = [0; 4];
+        reader.read(&mut buf).unwrap();
+        assert_eq!(buf, [6, 7, 8, 9]);
     }
 
     #[test]
@@ -437,6 +475,27 @@ mod tests {
         let mut buf = [0; 8];
         reader.read(&mut buf).unwrap();
         assert_eq!(buf, [0, 0, 0, 0, 0, 0, 0, 0]);
+    }
+
+    #[test]
+    fn into_inner() {
+        let inner = Cursor::new([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]);
+        let mut reader = BufReader::with_capacity(4, inner);
+
+        reader.seek(SeekFrom::Current(5)).unwrap();
+        let mut buf = [0; 8];
+        reader.read(&mut buf).unwrap();
+        assert_eq!(buf, [5, 6, 7, 8, 9, 10, 11, 12]);
+        reader.seek(SeekFrom::Current(-2)).unwrap();
+
+        let mut buf = [0; 2];
+        reader.read(&mut buf).unwrap();
+        assert_eq!(buf, [11, 12]);
+
+        let mut inner = reader.into_inner().unwrap();
+        let mut buf = [0; 8];
+        inner.read(&mut buf).unwrap();
+        assert_eq!(buf, [13, 14, 15, 16, 0, 0, 0, 0]);
     }
 }
 
