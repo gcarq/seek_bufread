@@ -30,7 +30,7 @@ Put this in your `Cargo.toml`:
 
 ```toml
 [dependencies]
-seek_bufread = "~1.0"
+seek_bufread = "~1.1"
 ```
 
 And this in your crate root:
