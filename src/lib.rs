@@ -223,12 +223,10 @@ impl<R: Read + Seek> Seek for BufReader<R> {
                 }
             }
             SeekFrom::Start(n) => {
-                // Get difference between actual and requested position
-                let n_bytes = n.checked_sub(self.absolute_pos).unwrap_or(0);
-                // Check if number of bytes is within buffer range
-                match n_bytes > 0 && n_bytes < self.available() as u64 {
-                    true => self.seek_forward(n_bytes as usize),
-                    false => self.sync_and_flush(pos)
+                // Check difference between actual and requested position
+                match n.checked_sub(self.absolute_pos) {
+                    Some(n_bytes) => self.seek_forward(n_bytes as usize),
+                    None => self.sync_and_flush(pos)
                 }
             }
             _ => self.sync_and_flush(pos)
