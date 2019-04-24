@@ -2,6 +2,8 @@
 
 [![Build Status](https://travis-ci.org/gcarq/seek_bufread.svg?branch=master)](https://travis-ci.org/gcarq/seek_bufread) [![Coverage Status](https://coveralls.io/repos/github/gcarq/seek_bufread/badge.svg?branch=master)](https://coveralls.io/github/gcarq/seek_bufread?branch=master) [![Crates.io](https://img.shields.io/crates/v/seek_bufread.svg)](https://crates.io/crates/seek_bufread/)
 
+**24.04.2019 NOTE:** This library is no longer needed since BufReader provides [seek_relative()](https://doc.rust-lang.org/std/io/struct.BufReader.html#method.seek_relative) with the same functionality. (See [rust#31100](https://github.com/rust-lang/rust/issues/31100)).
+
 
 A drop-in replacement for `std::io::BufReader` with seeking support.
 
